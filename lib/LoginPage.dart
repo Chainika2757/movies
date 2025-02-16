@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:movies/MoviesPage.dart'; // Ensure MoviesPage is imported
 import 'package:movies/SignUpPage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -35,31 +36,38 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login Successful!"), backgroundColor: Colors.green),
-      );
+      if (userCredential.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login Successful!"), backgroundColor: Colors.green),
+        );
 
-      // Navigate to MoviesPage without direct import
-      Navigator.pushReplacementNamed(context, '/movies');
+        // ✅ Navigate to MoviesPage after login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MoviesPage()),
+        );
+      }
     } catch (e) {
       setState(() {
         isLoading = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red),
       );
     }
   }
 
   String? _validateEmail(String email) {
     if (email.isEmpty) return "Email is required";
-    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$').hasMatch(email)) {
+
+    /// ✅ Fixed Regex
+    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email)) {
       return "Invalid email format";
     }
     return null;
