@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:movies/LoginPage.dart'; // Ensure correct import
+import 'package:movies/LoginPage.dart';
 
 class MoviesPage extends StatefulWidget {
   @override
@@ -11,12 +11,16 @@ class MoviesPage extends StatefulWidget {
 }
 
 class _MoviesPageState extends State<MoviesPage> {
-  final String apiKey = "8b782ec3"; // Replace with your valid OMDb API key
+  final String apiKey = "8b782ec3";
   List movies = [];
+  List filteredMovies = [];
   bool isLoading = false;
   int currentPage = 1;
   TextEditingController searchController = TextEditingController();
-  String searchQuery = "Harry"; // Default search query
+  String searchQuery = "Harry";
+  String selectedSort = "A-Z";
+  String selectedType = "";
+  String selectedYear = "";
 
   @override
   void initState() {
@@ -36,8 +40,10 @@ class _MoviesPageState extends State<MoviesPage> {
       setState(() {
         if (data["Response"] == "True") {
           movies = data["Search"] ?? [];
+          applyFilters();
         } else {
           movies = [];
+          filteredMovies = [];
         }
       });
     } else {
@@ -73,11 +79,71 @@ class _MoviesPageState extends State<MoviesPage> {
     }
   }
 
-  void logout() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage(isDarkMode: false, toggleTheme: (value) {})),
+  void applyFilters() {
+    List tempMovies = List.from(movies);
+
+    if (selectedYear.isNotEmpty) {
+      tempMovies = tempMovies.where((movie) => movie["Year"] == selectedYear).toList();
+    }
+    if (selectedType.isNotEmpty) {
+      tempMovies = tempMovies.where((movie) => movie["Type"].toLowerCase() == selectedType.toLowerCase()).toList();
+    }
+    if (selectedSort == "A-Z") {
+      tempMovies.sort((a, b) => a["Title"].compareTo(b["Title"]));
+    } else if (selectedSort == "Z-A") {
+      tempMovies.sort((a, b) => b["Title"].compareTo(a["Title"]));
+    }
+
+    setState(() {
+      filteredMovies = tempMovies;
+    });
+  }
+
+  void showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Filter & Sort"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField(
+                value: selectedSort,
+                decoration: InputDecoration(labelText: "Sort By"),
+                items: ["A-Z", "Z-A"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                onChanged: (value) {
+                  setState(() => selectedSort = value!);
+                },
+              ),
+              SizedBox(height: 10),
+              DropdownButtonFormField(
+                value: selectedType.isNotEmpty ? selectedType : null,
+                decoration: InputDecoration(labelText: "Type"),
+                items: ["movie", "series", "episode"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                onChanged: (value) {
+                  setState(() => selectedType = value!);
+                },
+              ),
+              SizedBox(height: 10),
+              TextField(
+                decoration: InputDecoration(labelText: "Year"),
+                keyboardType: TextInputType.number,
+                onChanged: (value) => selectedYear = value,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                applyFilters();
+              },
+              child: Text("Apply"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -86,16 +152,14 @@ class _MoviesPageState extends State<MoviesPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.redAccent,
-        title: Text(
-          "Movies",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        title: Text("Movies", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: logout,
-          ),
+          IconButton(icon: Icon(Icons.filter_list, color: Colors.white), onPressed: showFilterDialog),
+          IconButton(icon: Icon(Icons.logout, color: Colors.white), onPressed: () async {
+            await FirebaseAuth.instance.signOut();
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(isDarkMode: false, toggleTheme: (value) {})));
+          }),
         ],
       ),
       body: Column(
@@ -113,62 +177,55 @@ class _MoviesPageState extends State<MoviesPage> {
             ),
           ),
           Expanded(
-            child: movies.isEmpty && !isLoading
+            child: filteredMovies.isEmpty && !isLoading
                 ? Center(child: Text("No movies found"))
                 : ListView.builder(
-                    itemCount: movies.length,
+                    itemCount: filteredMovies.length,
                     itemBuilder: (context, index) {
-                      final movie = movies[index];
+                      final movie = filteredMovies[index];
                       return ListTile(
-                        leading: SizedBox(
-                          width: 50,
-                          height: 75,
-                          child: Image.network(movie["Poster"], fit: BoxFit.cover),
-                        ),
+                        leading: Image.network(movie["Poster"], width: 50, height: 75, fit: BoxFit.cover),
                         title: Text(movie["Title"]),
                         subtitle: Text(movie["Year"]),
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => MovieDetailsPage(movie: movie),
-                            ),
+                            MaterialPageRoute(builder: (context) => MovieDetailsPage(movie: movie)),
                           );
                         },
                       );
                     },
                   ),
           ),
-          if (isLoading)
+          if (!isLoading)
             Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: CircularProgressIndicator(),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: currentPage > 1 ? previousPage : null,
+                    child: Text("Previous", style: TextStyle(fontSize: 16)),
+                  ),
+                  SizedBox(width: 20),
+                  Text(
+                    "Page $currentPage",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 20),
+                  TextButton(
+                    onPressed: nextPage,
+                    child: Text("Next", style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+              ),
             ),
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            color: Colors.black12,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: currentPage > 1 ? previousPage : null,
-                  child: Text("Previous", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-                Text("Page $currentPage", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton(
-                  onPressed: movies.isNotEmpty ? nextPage : null,
-                  child: Text("Next", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-// Movie Details Page
 class MovieDetailsPage extends StatelessWidget {
   final Map movie;
   MovieDetailsPage({required this.movie});
@@ -176,15 +233,11 @@ class MovieDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.redAccent,
-        title: Text(movie["Title"]),
-      ),
+      appBar: AppBar(title: Text(movie["Title"])),
       body: Column(
         children: [
           Image.network(movie["Poster"]),
-          SizedBox(height: 10),
-          Text(movie["Title"], style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(movie["Title"]),
           Text("Year: ${movie["Year"]}"),
           Text("Type: ${movie["Type"]}"),
         ],
