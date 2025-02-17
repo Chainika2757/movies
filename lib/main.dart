@@ -6,7 +6,7 @@ import 'package:movies/moviesPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Ensure Firebase is initialized
+  await Firebase.initializeApp(); 
   runApp(MyApp());
 }
 
@@ -38,7 +38,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-// ✅ This widget checks if the user is logged in
+
 class AuthCheck extends StatelessWidget {
   final Function(bool) toggleTheme;
   final bool isDarkMode;
@@ -48,15 +48,15 @@ class AuthCheck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(), // ✅ Listen for auth state changes
+      stream: FirebaseAuth.instance.authStateChanges(), 
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(body: Center(child: CircularProgressIndicator())); // Show loading screen
+          return Scaffold(body: Center(child: CircularProgressIndicator())); 
         }
         if (snapshot.hasData) {
-          return MoviesPage(); // ✅ User is logged in, go to Movies Page
+          return MoviesPage();
         }
-        return LoginPage(toggleTheme: toggleTheme, isDarkMode: isDarkMode); // ✅ Show Login Page if not logged in
+        return LoginPage(toggleTheme: toggleTheme, isDarkMode: isDarkMode); 
       },
     );
   }

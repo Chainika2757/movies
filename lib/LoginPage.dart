@@ -46,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text("Login Successful!"), backgroundColor: Colors.green),
         );
 
-        // ✅ Navigate to MoviesPage after login
+        
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MoviesPage()),
@@ -66,7 +66,7 @@ class _LoginPageState extends State<LoginPage> {
   String? _validateEmail(String email) {
     if (email.isEmpty) return "Email is required";
 
-    /// ✅ Fixed Regex
+
     if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email)) {
       return "Invalid email format";
     }
