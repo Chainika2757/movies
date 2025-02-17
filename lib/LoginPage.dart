@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:movies/MoviesPage.dart'; // Ensure MoviesPage is imported
+import 'package:movies/MoviesPage.dart';
 import 'package:movies/SignUpPage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -167,7 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                   Text("Don't have an account?"),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => SignUpPage()),
                       );

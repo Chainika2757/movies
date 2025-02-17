@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:movies/MoviesPage.dart';
 
 import 'LoginPage.dart';
 
@@ -32,7 +33,7 @@ class _SignUpPageState extends State<SignUpPage> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginPage(isDarkMode: false, toggleTheme: (bool) {})),
+          MaterialPageRoute(builder: (context) => MoviesPage()),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,7 +148,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 children: [
                   Text("Already have an account? "),
                   GestureDetector(
-                    onTap: () => Navigator.push(
+                    onTap: () => Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (context) => LoginPage(isDarkMode: false, toggleTheme: (bool) {})),
                     ),
